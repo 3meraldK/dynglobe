@@ -1,0 +1,25 @@
+<html lang="pl-PL">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1">
+		<title>Dynglobe</title>
+		<link rel="icon" type="image/x-icon" href="images/logo.ico">
+		<style>
+			body {background-color: black; cursor: grab;} button {position: absolute} #nova {margin-left: 60px;}
+		  </style>
+	</head>
+	<body>
+		<script id="indexScript" type="module" src="js/index.js"></script>
+		<script src="js/three.js"></script>
+		<script src="js/controls.js"></script>
+		<script src="js/polygon.js"></script>
+		<button type="button" id="nova" onclick="toggleMap('nova')">Nova</button>
+		<button type="button" id="aurora" onclick="toggleMap('aurora')">Aurora</button> 
+		<script > 
+			function toggleMap(server) {
+				window.sessionStorage.setItem('server', server)
+				window.location.reload();s
+			}
+		</script>
+	</body>
+</html>
