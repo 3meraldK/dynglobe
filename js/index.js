@@ -5,16 +5,22 @@ const radius = 100,
 	x_divisor = 184.333333,
 	z_divisor = 184.155555,
 	zoom_stages = [
-		{maxDistance: 800, minDistance: 400, speed: 1},
-		{maxDistance: 399, minDistance: 200, speed: 0.5},
-		{maxDistance: 199, minDistance: 140, speed: 0.3},
-		{maxDistance: 139, minDistance: 105, speed: 0.15}
+		{maxDistance: 1001, minDistance: 300, speed: 1.75},
+		{maxDistance: 299, minDistance: 230, speed: 1.25},
+		{maxDistance: 229, minDistance: 180, speed: 0.8},
+		{maxDistance: 179, minDistance: 140, speed: 0.6},
+		{maxDistance: 139, minDistance: 120, speed: 0.4},
+		{maxDistance: 119, minDistance: 110, speed: 0.2},
+		{maxDistance: 109, minDistance: 104, speed: 0.1}
 	],
 	rotate_stages = [
-		{maxDistance: 800, minDistance: 400, speed: 0.66},
-		{maxDistance: 399, minDistance: 200, speed: 0.33},
-		{maxDistance: 199, minDistance: 140, speed: 0.1},
-		{maxDistance: 139, minDistance: 105, speed: 0.033}
+		{maxDistance: 1001, minDistance: 300, speed: 1},
+		{maxDistance: 299, minDistance: 230, speed: 0.66},
+		{maxDistance: 229, minDistance: 180, speed: 0.4},
+		{maxDistance: 179, minDistance: 140, speed: 0.2},
+		{maxDistance: 139, minDistance: 120, speed: 0.08},
+		{maxDistance: 119, minDistance: 110, speed: 0.03},
+		{maxDistance: 109, minDistance: 104, speed: 0.01}
 	],
 	playerGeometry = new THREE.SphereGeometry(0.2),
 	playerMaterial = new THREE.MeshBasicMaterial({color: 0x000000});
@@ -113,11 +119,12 @@ function initialize() {
 
 	// Configure controls.
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
-	controls.minDistance = 105;
+	controls.minDistance = 110;
 	controls.maxDistance = 1000;
 	controls.enableDamping = true;
-	controls.dampingFactor = 0.05;
+	controls.dampingFactor = 0.2;
 	controls.enablePan = false;
+	controls.zoomToCursor = true;
 	controls.update();
 }
 
@@ -158,9 +165,9 @@ function renderPlayers() {
 					latitude = -(player.z / z_divisor + z_constant),
 					theta = longitude * (Math.PI / 180),
 					phi = latitude * (Math.PI / 180),
-					x = (radius + 0.43) * Math.sin(theta) * Math.cos(phi),
-					y = (radius + 0.43) * Math.sin(phi),
-					z = (radius + 0.43) * Math.cos(theta) * Math.cos(phi);
+					x = radius * Math.sin(theta) * Math.cos(phi),
+					y = radius * Math.sin(phi),
+					z = radius * Math.cos(theta) * Math.cos(phi);
 
 				const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
 				placedPlayers.push(playerMesh);
@@ -168,7 +175,7 @@ function renderPlayers() {
 				const label = makeTextSprite(player.name);
 				placedLabels.push(label);
 				scene.add(label);
-				label.position.set((radius + 1.5) * Math.sin((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)), (radius + 1.5) * Math.sin((latitude - 1) * (Math.PI / 180)), (radius + 1.5) * Math.cos((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)));
+				label.position.set((radius + 1) * Math.sin((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)), (radius + 1) * Math.sin((latitude - 1) * (Math.PI / 180)), (radius + 1) * Math.cos((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)));
 				scene.add(playerMesh);
 			})
 
@@ -217,9 +224,9 @@ function renderTowns() {
 						latitude = -(vertex.z / z_divisor + z_constant),
 						theta = longitude * (Math.PI / 180),
 						phi = latitude * (Math.PI / 180),
-						x = (radius + 0.41) * Math.sin(theta) * Math.cos(phi),
-						y = (radius + 0.41) * Math.sin(phi),
-						z = (radius + 0.41) * Math.cos(theta) * Math.cos(phi);
+						x = (radius + 0.02) * Math.sin(theta) * Math.cos(phi),
+						y = (radius + 0.02) * Math.sin(phi),
+						z = (radius + 0.02) * Math.cos(theta) * Math.cos(phi);
 					geoJsonCoords.push([longitude, latitude]);
 					if (!xs.includes(vertex.x)) xs.push(vertex.x);
 					if (!zs.includes(vertex.z)) zs.push(vertex.z);
@@ -238,9 +245,9 @@ function renderTowns() {
 					latitude = -(avgZ / z_divisor + z_constant),
 					theta = (longitude + 2) * (Math.PI / 180),
 					phi = (latitude - 1) * (Math.PI / 180),
-					x = (radius + 0.81) * Math.sin(theta) * Math.cos(phi),
-					y = (radius + 0.81) * Math.sin(phi),
-					z = (radius + 0.81) * Math.cos(theta) * Math.cos(phi);
+					x = (radius + 0.5) * Math.sin(theta) * Math.cos(phi),
+					y = (radius + 0.5) * Math.sin(phi),
+					z = (radius + 0.5) * Math.cos(theta) * Math.cos(phi);
 				points.push(startPoint);
 				geoJson.features.push({"type": "Feature", "properties": {"nation": town.nation, "fill": town.fill, "outline": town.outline}, geometry: {"type": "Polygon", "coordinates": [geoJsonCoords]}})
 				// Render lines.
@@ -260,7 +267,7 @@ function renderTowns() {
 				const polygons = [geometry.coordinates];
 				polygons.forEach(coords => {
 					polygonMeshes.push(
-						new THREE.Mesh( new THREE.ConicPolygonGeometry(coords, 0, radius + 0.4),
+						new THREE.Mesh( new THREE.ConicPolygonGeometry(coords, 0, radius + 0.02),
 						[ new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true }),
 						new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true }),
 						new THREE.MeshBasicMaterial({ color: !drawMeganations ? properties.fill : getColor(properties.nation.toLowerCase()), opacity: 0.2, transparent: true }) ]

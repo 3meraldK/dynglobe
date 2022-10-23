@@ -55,6 +55,7 @@
 
 			this.enableZoom = true;
 			this.zoomSpeed = 1.0; // Set to false to disable rotating
+			this.zoomToCursor = false;
 
 			this.enableRotate = true;
 			this.rotateSpeed = 1.0; // Set to false to disable panning
@@ -514,12 +515,26 @@
 
 			function handleMouseWheel( event ) {
 
+				const x = event.offsetX / scope.domElement.clientWidth * 2 - 1,
+				y = -(event.offsetY / scope.domElement.clientHeight) * 2 + 1,
+				v = new THREE.Vector2(x, y);
+
 				if ( event.deltaY < 0 ) {
 
+					if (scope.zoomToCursor) {
+						rotateLeft( -.04 * v.x * scope.rotateSpeed); // yes, height
+						rotateUp( .04 * v.y * scope.rotateSpeed);
+					}
+					
 					dollyIn( getZoomScale() );
 
 				} else if ( event.deltaY > 0 ) {
 
+					if (scope.zoomToCursor) {
+						rotateLeft( .04 * v.x * scope.rotateSpeed); // yes, height
+						rotateUp( -.04 * v.y * scope.rotateSpeed);
+					}
+					
 					dollyOut( getZoomScale() );
 
 				}
