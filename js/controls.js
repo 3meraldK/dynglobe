@@ -522,8 +522,8 @@
 				if ( event.deltaY < 0 ) {
 
 					if (scope.zoomToCursor) {
-						rotateLeft( -.04 * v.x * scope.rotateSpeed); // yes, height
-						rotateUp( .04 * v.y * scope.rotateSpeed);
+						rotateLeft( -.1 * v.x * scope.rotateSpeed); // yes, height
+						rotateUp( .1 * v.y * scope.rotateSpeed);
 					}
 					
 					dollyIn( getZoomScale() );
@@ -531,8 +531,8 @@
 				} else if ( event.deltaY > 0 ) {
 
 					if (scope.zoomToCursor) {
-						rotateLeft( .04 * v.x * scope.rotateSpeed); // yes, height
-						rotateUp( -.04 * v.y * scope.rotateSpeed);
+						rotateLeft( .1 * v.x * scope.rotateSpeed); // yes, height
+						rotateUp( -.1 * v.y * scope.rotateSpeed);
 					}
 					
 					dollyOut( getZoomScale() );
