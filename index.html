@@ -5,7 +5,8 @@
 		<title>Dynglobe</title>
 		<link rel="icon" type="image/x-icon" href="images/logo.ico">
 		<style>
-			body {background-color: black; cursor: grab;} button {position: absolute} #nova {margin-left: 60px;}
+			div { display: inline-block; max-height: 22px; }
+			body { margin: 0; padding: 0; background-color: black; cursor: grab; } label { color: white; }
 		  </style>
 	</head>
 	<body>
@@ -13,13 +14,12 @@
 		<script src="js/three.js"></script>
 		<script src="js/controls.js"></script>
 		<script src="js/polygon.js"></script>
-		<button type="button" id="nova" onclick="toggleMap('nova')">Nova</button>
-		<button type="button" id="aurora" onclick="toggleMap('aurora')">Aurora</button> 
-		<script > 
-			function toggleMap(server) {
-				window.sessionStorage.setItem('server', server)
-				window.location.reload();s
-			}
-		</script>
+		<div id="options">
+			<button type="button" id="nova">Nova</button>
+			<button type="button" id="aurora">Aurora</button> 
+			<input type="checkbox" id="players" name="players" checked><label for="players">Players</label>
+			<input type="checkbox" id="towns" name="towns" checked><label for="towns">Towns</label>
+			<input type="checkbox" id="labels" name="labels" checked><label for="labels">Town labels</label>
+		</div>
 	</body>
 </html>

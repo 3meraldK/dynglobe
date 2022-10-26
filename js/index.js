@@ -5,34 +5,48 @@ const radius = 100,
 	x_divisor = 184.333333,
 	z_divisor = 184.155555,
 	zoom_stages = [
-		{maxDistance: 1001, minDistance: 300, speed: 1.75},
-		{maxDistance: 299, minDistance: 230, speed: 1.25},
-		{maxDistance: 229, minDistance: 180, speed: 0.8},
-		{maxDistance: 179, minDistance: 140, speed: 0.6},
+		{maxDistance: 1001, minDistance: 900, speed: 2},
+		{maxDistance: 899, minDistance: 800, speed: 1.8},
+		{maxDistance: 799, minDistance: 700, speed: 1.7},
+		{maxDistance: 699, minDistance: 600, speed: 1.6},
+		{maxDistance: 599, minDistance: 500, speed: 1.4},
+		{maxDistance: 499, minDistance: 400, speed: 1.3},
+		{maxDistance: 399, minDistance: 300, speed: 1.25},
+		{maxDistance: 299, minDistance: 230, speed: 1.2},
+		{maxDistance: 229, minDistance: 180, speed: 0.9},
+		{maxDistance: 179, minDistance: 140, speed: 0.7},
 		{maxDistance: 139, minDistance: 120, speed: 0.4},
-		{maxDistance: 119, minDistance: 110, speed: 0.2},
-		{maxDistance: 109, minDistance: 104, speed: 0.1}
+		{maxDistance: 119, minDistance: 110, speed: 0.25}
 	],
 	rotate_stages = [
-		{maxDistance: 1001, minDistance: 300, speed: 1},
-		{maxDistance: 299, minDistance: 230, speed: 0.66},
-		{maxDistance: 229, minDistance: 180, speed: 0.4},
-		{maxDistance: 179, minDistance: 140, speed: 0.2},
-		{maxDistance: 139, minDistance: 120, speed: 0.08},
-		{maxDistance: 119, minDistance: 110, speed: 0.03},
-		{maxDistance: 109, minDistance: 104, speed: 0.01}
+		{maxDistance: 1001, minDistance: 900, speed: 0.5},
+		{maxDistance: 899, minDistance: 800, speed: 0.48},
+		{maxDistance: 799, minDistance: 700, speed: 0.45},
+		{maxDistance: 699, minDistance: 600, speed: 0.4},
+		{maxDistance: 599, minDistance: 500, speed: 0.34},
+		{maxDistance: 499, minDistance: 400, speed: 0.25},
+		{maxDistance: 399, minDistance: 300, speed: 0.2},
+		{maxDistance: 299, minDistance: 230, speed: 0.13},
+		{maxDistance: 229, minDistance: 180, speed: 0.09},
+		{maxDistance: 179, minDistance: 140, speed: 0.06},
+		{maxDistance: 139, minDistance: 120, speed: 0.04},
+		{maxDistance: 119, minDistance: 110, speed: 0.025}
 	],
 	playerGeometry = new THREE.SphereGeometry(0.2),
 	playerMaterial = new THREE.MeshBasicMaterial({color: 0x000000});
 	
 let scene, renderer, camera, controls, skybox;
+const townLabelsObj = [],
+	playersObj = [],
+	playerLabelsObj = [],
+	townsObj = [];
 const drawMeganations = false;
 
 // Two methods to draw text sprites.
 function makeTextSprite(message, parameters) {
 	if ( parameters === undefined ) parameters = {};
 	const fontface = parameters.hasOwnProperty("fontface") ? parameters["fontface"] : "Arial",
-		fontsize = parameters.hasOwnProperty("fontsize") ? parameters["fontsize"] : 14,
+		fontsize = parameters.hasOwnProperty("fontsize") ? parameters["fontsize"] : 12,
 		borderThickness = parameters.hasOwnProperty("borderThickness") ? parameters["borderThickness"] : 2,
 		borderColor = parameters.hasOwnProperty("borderColor") ?parameters["borderColor"] : { r:0, g:0, b:0, a:0.0 },
 		backgroundColor = parameters.hasOwnProperty("backgroundColor") ?parameters["backgroundColor"] : { r:0, g:0, b:0, a:0.6 },
@@ -78,9 +92,35 @@ function roundRect(ctx, x, y, w, h, r) {
 	ctx.stroke();
 }
 
+document.getElementById('nova').addEventListener('click', function() { toggleMap('nova') })
+document.getElementById('aurora').addEventListener('click', function() { toggleMap('aurora') })
+document.getElementById('players').addEventListener('change', function() { toggle('players') })
+document.getElementById('towns').addEventListener('change', function() { toggle('towns') })
+document.getElementById('labels').addEventListener('change', function() { toggle('labels') })
+
+function toggleMap(server) {
+	window.sessionStorage.setItem('server', server)
+	window.location.reload();
+}
+
+function toggle(param) {
+	switch (param) {
+		case 'players':
+			playersObj.forEach(player => {player.visible = !player.visible});
+			playerLabelsObj.forEach(player => {player.visible = !player.visible});
+			break;
+		case 'towns':
+			townsObj.forEach(town => {town.visible = !town.visible});
+			break;
+		case 'labels':
+			townLabelsObj.forEach(label => {label.visible = !label.visible});
+			break;
+	}
+}
+
 function initialize() {
-	const width = window.innerWidth - 18,
-		height = window.innerHeight - 18;
+	const width = window.innerWidth,
+		height = window.innerHeight - 22;
 	scene = new THREE.Scene();
 	camera = new THREE.PerspectiveCamera(20, width / height, 0.1, 10000);
 	renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -139,12 +179,19 @@ function update() {
 	rotate_stages.forEach(stage => {
 		if (zoom >= stage.minDistance && zoom <= stage.maxDistance) controls.rotateSpeed = stage.speed;
 	});
+	if (zoom > 160) {
+		playerLabelsObj.forEach(player => {player.visible = false});
+		townLabelsObj.forEach(label => {label.visible = false});
+	} else {
+		playerLabelsObj.forEach(player => {player.visible = document.getElementById('players').checked});
+		townLabelsObj.forEach(player => {player.visible = document.getElementById('labels').checked});
+	}
 	controls.update();
 };
 
 function resize() {
-	const width = window.innerWidth - 18,
-		height = window.innerHeight - 18;
+	const width = window.innerWidth,
+		height = window.innerHeight - 22;
 	camera.aspect = width / height;
 	camera.updateProjectionMatrix();
 	renderer.setSize(width, height);
@@ -158,6 +205,8 @@ function renderPlayers() {
 	fetch(`https://emc-toolkit.vercel.app/api/${server}/onlineplayers`)
 		.then(res => res.json())
 		.then(json => {
+			playersObj.splice(0, playersObj.length);
+			playerLabelsObj.splice(0, playerLabelsObj.length);
 			json.forEach(player => { if (!player.underground) players.push({ name: player.name, x: player.x, z: player.z }); });
 			
 			players.forEach(player => {
@@ -174,6 +223,8 @@ function renderPlayers() {
 				playerMesh.position.set(x, y, z);
 				const label = makeTextSprite(player.name);
 				placedLabels.push(label);
+				playerLabelsObj.push(label);
+				playersObj.push(playerMesh);
 				scene.add(label);
 				label.position.set((radius + 1) * Math.sin((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)), (radius + 1) * Math.sin((latitude - 1) * (Math.PI / 180)), (radius + 1) * Math.cos((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)));
 				scene.add(playerMesh);
@@ -243,8 +294,8 @@ function renderTowns() {
 					avgZ = (Math.min(...zs) + Math.max(...zs)) / 2,
 					longitude = avgX / x_divisor + x_constant,
 					latitude = -(avgZ / z_divisor + z_constant),
-					theta = (longitude + 2) * (Math.PI / 180),
-					phi = (latitude - 1) * (Math.PI / 180),
+					theta = (longitude + 1.8) * (Math.PI / 180),
+					phi = (latitude - 0.7) * (Math.PI / 180),
 					x = (radius + 0.5) * Math.sin(theta) * Math.cos(phi),
 					y = (radius + 0.5) * Math.sin(phi),
 					z = (radius + 0.5) * Math.cos(theta) * Math.cos(phi);
@@ -255,9 +306,10 @@ function renderTowns() {
 					lineGeometry = new THREE.BufferGeometry().setFromPoints(points),
 					line = new THREE.Line(lineGeometry, lineMaterial);
 				scene.add(line);
-
-				const label = makeTextSprite(town.nation ? `${town.name}, ${town.nation}` : `${town.name}`, { fontsize: 12, backgroundColor: {r: 0, g: 166, b: 88, a: 0.33}, textColor: {r: 0, g: 199, b: 255, a: 1.0} });
+				townsObj.push(line);
+				const label = makeTextSprite(town.nation ? `${town.name}, ${town.nation}` : `${town.name}`, { fontsize: 10, backgroundColor: {r: 0, g: 166, b: 88, a: 0.33}, textColor: {r: 0, g: 199, b: 255, a: 1.0} });
 				scene.add(label);
+				townLabelsObj.push(label);
 				label.position.set(x, y, z);
 				
 			});
@@ -275,7 +327,10 @@ function renderTowns() {
 					);
 				});
 			});
-			polygonMeshes.forEach(mesh => scene.add(mesh));
+			polygonMeshes.forEach(mesh => {
+				scene.add(mesh);
+				townsObj.push(mesh);
+			});
 		});
 }
 
