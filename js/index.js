@@ -41,6 +41,8 @@ const townLabelsObj = [],
 	playerLabelsObj = [],
 	townsObj = [];
 const drawMeganations = false;
+let surfaceFly = true;
+const axis = new THREE.Vector3( 1, 0, 0 );
 
 // Two methods to draw text sprites.
 function makeTextSprite(message, parameters) {
@@ -97,6 +99,7 @@ document.getElementById('aurora').addEventListener('click', function() { toggleM
 document.getElementById('players').addEventListener('change', function() { toggle('players') })
 document.getElementById('towns').addEventListener('change', function() { toggle('towns') })
 document.getElementById('labels').addEventListener('change', function() { toggle('labels') })
+document.getElementById('flysurf').addEventListener('change', function() { toggle('flysurf') })
 
 function toggleMap(server) {
 	window.sessionStorage.setItem('server', server)
@@ -115,6 +118,8 @@ function toggle(param) {
 		case 'labels':
 			townLabelsObj.forEach(label => {label.visible = !label.visible});
 			break;
+		case 'flysurf':
+			surfaceFly = !surfaceFly;
 	}
 }
 
@@ -165,13 +170,17 @@ function initialize() {
 	controls.dampingFactor = 0.2;
 	controls.enablePan = false;
 	controls.zoomToCursor = true;
-	controls.update();
 }
 
 function update() {
 	skybox.position.set(camera.position.x, camera.position.y, camera.position.z);
-	requestAnimationFrame(update);
-	renderer.render(scene, camera);
+	controls.update();
+	if (surfaceFly) {
+		let angle = Math.PI / 2;
+		const effect = Math.exp(0.04 * (radius - camera.position.length()))
+		angle *= effect;
+		camera.rotateOnAxis( axis, angle );
+	}
 	const zoom = controls.getDistance();
 	zoom_stages.forEach(stage => {
 		if (zoom >= stage.minDistance && zoom <= stage.maxDistance) controls.zoomSpeed = stage.speed;
@@ -179,15 +188,16 @@ function update() {
 	rotate_stages.forEach(stage => {
 		if (zoom >= stage.minDistance && zoom <= stage.maxDistance) controls.rotateSpeed = stage.speed;
 	});
-	if (zoom > 160) {
+	if (zoom > 150) {
 		playerLabelsObj.forEach(player => {player.visible = false});
 		townLabelsObj.forEach(label => {label.visible = false});
 	} else {
 		playerLabelsObj.forEach(player => {player.visible = document.getElementById('players').checked});
 		townLabelsObj.forEach(player => {player.visible = document.getElementById('labels').checked});
 	}
-	controls.update();
-};
+	renderer.render( scene, camera );
+	requestAnimationFrame(update);
+}
 
 function resize() {
 	const width = window.innerWidth,
@@ -226,7 +236,7 @@ function renderPlayers() {
 				playerLabelsObj.push(label);
 				playersObj.push(playerMesh);
 				scene.add(label);
-				label.position.set((radius + 1) * Math.sin((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)), (radius + 1) * Math.sin((latitude - 1) * (Math.PI / 180)), (radius + 1) * Math.cos((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)));
+				label.position.set((radius + 0.4) * Math.sin((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)), (radius + 0.4) * Math.sin((latitude - 1) * (Math.PI / 180)), (radius + 0.4) * Math.cos((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)));
 				scene.add(playerMesh);
 			})
 
@@ -296,9 +306,9 @@ function renderTowns() {
 					latitude = -(avgZ / z_divisor + z_constant),
 					theta = (longitude + 1.8) * (Math.PI / 180),
 					phi = (latitude - 0.7) * (Math.PI / 180),
-					x = (radius + 0.5) * Math.sin(theta) * Math.cos(phi),
-					y = (radius + 0.5) * Math.sin(phi),
-					z = (radius + 0.5) * Math.cos(theta) * Math.cos(phi);
+					x = (radius + 0.33) * Math.sin(theta) * Math.cos(phi),
+					y = (radius + 0.33) * Math.sin(phi),
+					z = (radius + 0.33) * Math.cos(theta) * Math.cos(phi);
 				points.push(startPoint);
 				geoJson.features.push({"type": "Feature", "properties": {"nation": town.nation, "fill": town.fill, "outline": town.outline}, geometry: {"type": "Polygon", "coordinates": [geoJsonCoords]}})
 				// Render lines.
