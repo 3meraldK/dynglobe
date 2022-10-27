@@ -47,7 +47,7 @@ const axis = new THREE.Vector3( 1, 0, 0 );
 // Two methods to draw text sprites.
 function makeTextSprite(message, parameters) {
 	if ( parameters === undefined ) parameters = {};
-	const fontface = parameters.hasOwnProperty("fontface") ? parameters["fontface"] : "Arial",
+	const fontface = parameters.hasOwnProperty("fontface") ? parameters["fontface"] : "Source Sans Pro",
 		fontsize = parameters.hasOwnProperty("fontsize") ? parameters["fontsize"] : 12,
 		borderThickness = parameters.hasOwnProperty("borderThickness") ? parameters["borderThickness"] : 2,
 		borderColor = parameters.hasOwnProperty("borderColor") ?parameters["borderColor"] : { r:0, g:0, b:0, a:0.0 },
@@ -56,7 +56,7 @@ function makeTextSprite(message, parameters) {
 
 	const canvas = document.createElement('canvas'),
 		context = canvas.getContext('2d');
-	context.font = "Bold " + fontsize + "px " + fontface;
+	context.font = fontsize + "px " + fontface;
 	const metrics = context.measureText( message ),
 		textWidth = metrics.width;
 
