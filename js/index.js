@@ -231,11 +231,13 @@ function renderPlayers() {
 				const playerMesh = new THREE.Mesh(playerGeometry, playerMaterial);
 				placedPlayers.push(playerMesh);
 				playerMesh.position.set(x, y, z);
+				if (!document.getElementById('players').checked) playerMesh.visible = false;
 				const label = makeTextSprite(player.name);
 				placedLabels.push(label);
 				playerLabelsObj.push(label);
 				playersObj.push(playerMesh);
 				scene.add(label);
+				if (!document.getElementById('players').checked) label.visible = false;
 				label.position.set((radius + 0.4) * Math.sin((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)), (radius + 0.4) * Math.sin((latitude - 1) * (Math.PI / 180)), (radius + 0.4) * Math.cos((longitude + 2) * (Math.PI / 180)) * Math.cos((latitude - 1) * (Math.PI / 180)));
 				scene.add(playerMesh);
 			})
