@@ -540,7 +540,7 @@
 
 				if ( event.deltaY < 0 ) {
 
-					if ( scope.zoomToCursor && scope.getDistance() > scope.minDistance - 1 ) {
+					if ( scope.zoomToCursor && scope.getDistance() > scope.minDistance + 1 ) {
 						rotateLeft( -scope.zoomToCursorMultiplier * v.x * scope.rotateSpeed );
 						rotateUp( scope.zoomToCursorMultiplier * v.y * scope.rotateSpeed );
 					}
