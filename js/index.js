@@ -94,8 +94,9 @@ function initialize() {
 	camera.position.z = 800;
 	
 	// Render planet.
-	const earthGeometry = new THREE.SphereGeometry(radius, 50, 50),
-		earthMaterial = new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/map.png') }),
+	const server = window.sessionStorage.getItem('server') || 'aurora',
+		earthGeometry = new THREE.SphereGeometry(radius, 50, 50),
+		earthMaterial = new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(`images/${server}.png`) }),
 		earth = new THREE.Mesh(earthGeometry, earthMaterial);
 	earth.rotation.y = -1.57;
 	scene.add(earth);
