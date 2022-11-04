@@ -16,7 +16,7 @@ const radius = 100,
 		{ maxDistance: 229, minDistance: 180, speed: 0.9 },
 		{ maxDistance: 179, minDistance: 140, speed: 0.7 },
 		{ maxDistance: 139, minDistance: 120, speed: 0.4 },
-		{ maxDistance: 119, minDistance: 110, speed: 0.25 }
+		{ maxDistance: 119, minDistance: 104, speed: 0.25 }
 	],
 	rotate_stages = [
 		{ maxDistance: 1001, minDistance: 900, speed: 0.5 },
@@ -30,7 +30,7 @@ const radius = 100,
 		{ maxDistance: 229, minDistance: 180, speed: 0.09 },
 		{ maxDistance: 179, minDistance: 140, speed: 0.06 },
 		{ maxDistance: 139, minDistance: 120, speed: 0.04 },
-		{ maxDistance: 119, minDistance: 110, speed: 0.025 }
+		{ maxDistance: 119, minDistance: 104, speed: 0.025 }
 	],
 	playerGeometry = new THREE.SphereGeometry(0.2),
 	playerMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 }),
@@ -38,7 +38,8 @@ const radius = 100,
 	axis = new THREE.Vector3( 1, 0, 0 );
 	
 let scene, renderer, camera, controls, skybox;
-let surfaceFlight = true;
+let surfaceFlight = true,
+	angleMod = 0.04;
 
 // Convert cartesian coords x, z to spherical coords with radius r.
 function cartesianToSpherical(x, z, r) {
@@ -59,13 +60,14 @@ document.getElementById('players').addEventListener('change', function() { toggl
 document.getElementById('towns').addEventListener('change', function() { toggleInput('towns') });
 document.getElementById('labels').addEventListener('change', function() { toggleInput('labels') });
 document.getElementById('flysurf').addEventListener('change', function() { toggleInput('surfaceflight') });
+document.getElementById('anglemod').addEventListener('input', function() { toggleInput('anglemod', this.value) });
 
 function toggleMap(server) {
 	window.sessionStorage.setItem('server', server);
 	window.location.reload();
 }
 
-function toggleInput(param) {
+function toggleInput(param, value = null) {
 	switch (param) {
 		case 'players':
 			playersObj.forEach(player => { player.visible = !player.visible; });
@@ -79,6 +81,9 @@ function toggleInput(param) {
 			break;
 		case 'surfaceflight':
 			surfaceFlight = !surfaceFlight;
+			break;
+		case 'anglemod':
+			angleMod = value;
 	}
 }
 
@@ -124,7 +129,7 @@ function initialize() {
 
 	// Configure controls.
 	controls = new THREE.OrbitControls( camera, renderer.domElement );
-	controls.minDistance = 110;
+	controls.minDistance = 104;
 	controls.maxDistance = 1000;
 	controls.enableDamping = true;
 	controls.dampingFactor = 0.2;
@@ -139,7 +144,7 @@ function update() {
 	// Surface flight feature.
 	if (surfaceFlight) {
 		let angle = Math.PI / 2;
-		const effect = Math.exp(0.04 * (radius - camera.position.length()));
+		const effect = Math.exp(angleMod * (radius - camera.position.length()));
 		angle *= effect;
 		camera.rotateOnAxis( axis, angle );
 	}
