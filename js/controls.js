@@ -64,6 +64,11 @@
 			this.zoomToCursor = false;
 			this.zoomToCursorMultiplier = .3; 
 
+			// This option allows to double click for zoom
+			// Set to true to enable
+			this.doubleClickZoom = false;
+			this.doubleClickZoomMultiplier = .3; 
+
 			// Set to false to disable rotating
 			this.enableRotate = true;
 			this.rotateSpeed = 1.0;
@@ -108,6 +113,7 @@
 			// the target DOM element for key events
 			this._domElementKeyEvents = null;
 
+			let doubleClickState = 0;
 			//
 			// public methods
 			//
@@ -730,10 +736,32 @@
 				if ( scope.enabled === false ) return;
 				if ( pointers.length === 0 ) {
 
-					scope.domElement.setPointerCapture( event.pointerId );
-					scope.domElement.addEventListener( 'pointermove', onPointerMove );
-					scope.domElement.addEventListener( 'pointerup', onPointerUp );
-
+				  
+				  scope.domElement.setPointerCapture( event.pointerId );
+				  scope.domElement.addEventListener( 'pointermove', onPointerMove );
+				  scope.domElement.addEventListener( 'pointerup', onPointerUp );
+				  if ( scope.doubleClickZoom && scope.getDistance() > scope.minDistance + 1 ) {
+					doubleClickState++;
+					if (doubleClickState > 1) { // double click happened
+					  const x = event.offsetX / scope.domElement.clientWidth * 2 - 1,
+						y = -( event.offsetY / scope.domElement.clientHeight ) * 2 + 1,
+						v = new THREE.Vector2( x, y );
+				
+					  for (let i = 0; i < 5; i++) {
+						dollyIn( getZoomScale() );
+						rotateLeft( -scope.zoomToCursorMultiplier * v.x * scope.rotateSpeed );
+						rotateUp( scope.zoomToCursorMultiplier * v.y * scope.rotateSpeed );
+					  }
+				
+					  scope.update();
+				
+					} else {
+					  setTimeout(() => {
+						doubleClickState = 0;
+					  }, 300);
+					}
+				  }
+				  
 				}
 
 				//
