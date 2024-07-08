@@ -240,8 +240,6 @@ async function renderTowns() {
 		}
 	}
 
-	console.log(regionData)
-
 	// Calculate coords.
 	let geoJson = { "type": "FeatureCollection", "features": [] };
 	regionData.forEach((town) => {
