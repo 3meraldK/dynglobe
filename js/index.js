@@ -54,18 +54,11 @@ function cartesianToSpherical(x, z, r) {
 }
 
 // Buttons/togglers listeners and methods.
-document.getElementById('nova').addEventListener('click', function() { toggleMap('nova') });
-document.getElementById('aurora').addEventListener('click', function() { toggleMap('aurora') });
 document.getElementById('players').addEventListener('change', function() { toggleInput('players') });
 document.getElementById('towns').addEventListener('change', function() { toggleInput('towns') });
 document.getElementById('labels').addEventListener('change', function() { toggleInput('labels') });
 document.getElementById('flysurf').addEventListener('change', function() { toggleInput('surfaceflight') });
 document.getElementById('anglemod').addEventListener('input', function() { toggleInput('anglemod', this.value) });
-
-function toggleMap(server) {
-	window.sessionStorage.setItem('server', server);
-	window.location.reload();
-}
 
 function toggleInput(param, value = null) {
 	switch (param) {
@@ -99,9 +92,8 @@ function initialize() {
 	camera.position.z = 800;
 	
 	// Render planet.
-	const server = window.sessionStorage.getItem('server') || 'aurora',
-		earthGeometry = new THREE.SphereGeometry(radius, 50, 50),
-		earthMaterial = new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(`images/${server}.png`) }),
+	const earthGeometry = new THREE.SphereGeometry(radius, 50, 50),
+		earthMaterial = new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(`images/map.png`) }),
 		earth = new THREE.Mesh(earthGeometry, earthMaterial);
 	earth.rotation.y = -1.57;
 	scene.add(earth);
@@ -109,12 +101,12 @@ function initialize() {
 	// Render skybox.
 	const skyboxGeometry = new THREE.BoxGeometry(3000, 3000, 3000),
 		skyboxFaces = [
-			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/top.png'), side: THREE.DoubleSide }),
-			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/bottom.png'), side: THREE.DoubleSide }),
-			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/left.png'), side: THREE.DoubleSide }),
-			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/right.png'), side: THREE.DoubleSide }),
-			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/front.png'), side: THREE.DoubleSide }),
-			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/back.png'), side: THREE.DoubleSide }),
+			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/skybox/top.png'), side: THREE.DoubleSide }),
+			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/skybox/bottom.png'), side: THREE.DoubleSide }),
+			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/skybox/left.png'), side: THREE.DoubleSide }),
+			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/skybox/right.png'), side: THREE.DoubleSide }),
+			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/skybox/front.png'), side: THREE.DoubleSide }),
+			new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load('images/skybox/back.png'), side: THREE.DoubleSide }),
 		];
 	skybox = new THREE.Mesh(skyboxGeometry, skyboxFaces);
 	scene.add(skybox);
@@ -180,8 +172,7 @@ function resize() {
 
 function renderPlayers() {
 	let players = [], placedPlayers = [], placedLabels = [];
-	const server = window.sessionStorage.getItem('server') || 'aurora';
-	fetch('https://corsproxy.io/?' + encodeURIComponent(`https://emctoolkit.vercel.app/api/${server}/onlineplayers`))
+	fetch('https://corsproxy.io/?' + encodeURIComponent(`https://emctoolkit.vercel.app/api/aurora/onlineplayers`))
 		.then(res => res.json())
 		.then(json => {
 			playersObj.splice(0, playersObj.length);
@@ -220,109 +211,106 @@ function renderPlayers() {
 		}).catch((error) => console.error(`Couldn't load players, error: ${error}`));
 }
 
-function renderTowns() {
-	const townData = [],
-		server = window.sessionStorage.getItem('server') || 'aurora';
+function roundTo16(number) {
+	return Math.round(number / 16) * 16
+}
 
-	let mapURL = `https://earthmc.net/map/${server}/`,
-		markers = `standalone/MySQL_markers.php?marker=`,
-		worldMarker = `_markers_/marker_earth.json`;
+async function renderTowns() {
+
+	const data = await fetchJSON('https://api.codetabs.com/v1/proxy/?quest=https://map.earthmc.net/tiles/minecraft_overworld/markers.json')
+	if (data[0].markers.length == 0) {
+		alert('Unexpected error occurred while loading the globe, maybe EarthMC is down? Try again later.')
+		return
+	}
+
+	// Push needed data to towns array.
+	const regionData = []
+	for (const index in data[0].markers) {
+		let marker = data[0]['markers'][index]
+		if (marker.type != 'polygon') continue
+
+		for (const region of marker.points) {
+			const vertices = []
+			for (const vertex of region[0]) { vertices.push({x: roundTo16(vertex.x), z: roundTo16(vertex.z)}) }
+
+			const town = marker.tooltip.match(/<b>(.*)<\/b>/)[1]
+			const nation = marker.tooltip.match(/\(\b(?:Member|Capital)\b of (.*)\)\n/)?.at(1)
+			regionData.push({ name: town, fill: marker.fillColor, outline: marker.color, nation: nation, vertices: vertices });
+
+		}
+	}
+
+	console.log(regionData)
+
+	// Calculate coords.
+	let geoJson = { "type": "FeatureCollection", "features": [] };
+	regionData.forEach((town) => {
+		const geoJsonCoords = [], points = [], xs = [], zs = [];
+		let startPoint;
+		Object.values(town.vertices).forEach((vertex, vertexIndex) => {
+			const location = cartesianToSpherical(vertex.x, vertex.z, radius + 0.02),
+				longitude = vertex.x / x_divisor + x_constant,
+				latitude = -(vertex.z / z_divisor + z_constant),
+				point = new THREE.Vector3(...location);
+			geoJsonCoords.push([longitude, latitude]);
+			if (!xs.includes(vertex.x)) xs.push(vertex.x);
+			if (!zs.includes(vertex.z)) zs.push(vertex.z);
+			if (vertexIndex == 0) startPoint = point;
+			points.push(point);
+			
+		});
+
+		const avgX = (Math.min(...xs) + Math.max(...xs)) / 2,
+			avgZ = (Math.min(...zs) + Math.max(...zs)) / 2,
+			location = cartesianToSpherical(avgX, avgZ, radius + 0.33);
+		geoJsonCoords.push(geoJsonCoords[0]);
+		geoJsonCoords.reverse();
+		points.push(startPoint);
+		geoJson.features.push({ 
+			"type": "Feature",
+			"properties": { "nation": town.nation, "fill": town.fill, "outline": town.outline },
+			geometry: { "type": "Polygon", "coordinates": [geoJsonCoords] }});
 		
-	fetch('https://corsproxy.io/?' + encodeURIComponent(`${mapURL}standalone/config.js`))
-		.then(response => response.text())
-		.then(config => {
-			markers = config.split('markers:')[1].replace(/[\'\s};]/g, '')
-			fetch('https://corsproxy.io/?' + encodeURIComponent(`${mapURL}${markers}${worldMarker}`))
-				.then(res => res.json())
-				.then(json => {
+		// Render lines.
+		const lineMaterial = new THREE.LineBasicMaterial({ color: town.outline }),
+			lineGeometry = new THREE.BufferGeometry().setFromPoints(points),
+			line = new THREE.Line(lineGeometry, lineMaterial);
+		scene.add(line);
+		townsObj.push(line);
+		
+		// Render goofy ah labels.
+		const label = new SpriteText(town.nation ? `${town.name},\n${town.nation}` : `${town.name}`, 0.2, 'turquoise');
+		scene.add(label);
+		townLabelsObj.push(label);
+		label.position.set(...location);
+		
+	});
 
-					// Delete shop areas and create an array of towns.
-					Object.keys(json.sets['townyPlugin.markerset'].areas).forEach(area => { 
-						if (area.includes('_Shop')) delete json.sets['townyPlugin.markerset'].areas[area]; 
-					});
-
-					// Push needed data to towns array.
-					Object.values(json.sets['townyPlugin.markerset'].areas).forEach(town => {
-						const townCoords = [];
-						Object.values(town.x).forEach((x, i) => {
-							let z = town.z[i];
-							if (x > bounds.rightX || x < bounds.leftX) x < 0 ? x += x + bounds.leftX : x -= x - bounds.rightX;
-							if (z > bounds.downZ || z < bounds.upZ) z < 0 ? z += z + bounds.upZ : z -= z - bounds.downZ;
-							townCoords.push({ x: x, z: z });
-						});
-						const nationRegex = /(?<=\()[^)]*/;
-						const nationWikiRegex = /(?<=nofollow">)[^<]+(?=<\/a>\))/;
-						const nation = town.desc.includes('(<a ') ? town.desc.match(nationWikiRegex)[0] : town.desc.match(nationRegex)[0];
-						townData.push({ name: town.label, fill: town.fillcolor, outline: town.color, nation: nation, vertices: townCoords });
-
-					});
-
-					// Calculate coords.
-					let geoJson = { "type": "FeatureCollection", "features": [] };
-					townData.forEach((town) => {
-						const geoJsonCoords = [], points = [], xs = [], zs = [];
-						let startPoint;
-						Object.values(town.vertices).forEach((vertex, vertexIndex) => {
-							const location = cartesianToSpherical(vertex.x, vertex.z, radius + 0.02),
-								longitude = vertex.x / x_divisor + x_constant,
-								latitude = -(vertex.z / z_divisor + z_constant),
-								point = new THREE.Vector3(...location);
-							geoJsonCoords.push([longitude, latitude]);
-							if (!xs.includes(vertex.x)) xs.push(vertex.x);
-							if (!zs.includes(vertex.z)) zs.push(vertex.z);
-							if (vertexIndex == 0) startPoint = point;
-							points.push(point);
-							
-						});
-
-						const avgX = (Math.min(...xs) + Math.max(...xs)) / 2,
-							avgZ = (Math.min(...zs) + Math.max(...zs)) / 2,
-							location = cartesianToSpherical(avgX, avgZ, radius + 0.33);
-						geoJsonCoords.push(geoJsonCoords[0]);
-						points.push(startPoint);
-						geoJson.features.push({ 
-							"type": "Feature",
-							"properties": { "nation": town.nation, "fill": town.fill, "outline": town.outline },
-							geometry: { "type": "Polygon", "coordinates": [geoJsonCoords] }});
-						
-						// Render lines.
-						const lineMaterial = new THREE.LineBasicMaterial({ color: town.outline }),
-							lineGeometry = new THREE.BufferGeometry().setFromPoints(points),
-							line = new THREE.Line(lineGeometry, lineMaterial);
-						scene.add(line);
-						townsObj.push(line);
-						
-						// Render goofy ah labels.
-						const label = new SpriteText(town.nation ? `${town.name},\n${town.nation}` : `${town.name}`, 0.2, 'turquoise');
-						scene.add(label);
-						townLabelsObj.push(label);
-						label.position.set(...location);
-						
-					});
-
-					// Render polygons.
-					const polygonMeshes = [];
-					geoJson.features.forEach(({ properties, geometry }) => {
-						const polygons = [geometry.coordinates];
-						polygons.forEach(coords => {
-							polygonMeshes.push(
-								new THREE.Mesh( new THREE.ConicPolygonGeometry(coords, 0, radius + 0.02),
-								[ new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true }),
-								new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true }),
-								new THREE.MeshBasicMaterial({ color: properties.fill, opacity: 0.2, transparent: true }) ]
-								)
-							);
-						});
-					});
-					polygonMeshes.forEach(mesh => {
-						scene.add(mesh);
-						townsObj.push(mesh);
-					});
-				});
-		})
-		.catch(error => console.log(`Could not fetch config: ${error}`));
+	// Render polygons.
+	const polygonMeshes = [];
+	geoJson.features.forEach(({ properties, geometry }) => {
+		const polygons = [geometry.coordinates];
+		polygons.forEach(coords => {
+			polygonMeshes.push(
+				new THREE.Mesh( new THREE.ConicPolygonGeometry(coords, 0, radius + 0.02),
+				[ new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true }),
+				new THREE.MeshBasicMaterial({ opacity: 0.0, transparent: true }),
+				new THREE.MeshBasicMaterial({ color: properties.fill, opacity: 0.2, transparent: true }) ]
+				)
+			);
+		});
+	});
+	polygonMeshes.forEach(mesh => {
+		scene.add(mesh);
+		townsObj.push(mesh);
+	});
 	
-	
+}
+
+async function fetchJSON(url) {
+	const response = await fetch(url)
+	if (response.ok) return response.json()
+	else return null
 }
 
 initialize();
