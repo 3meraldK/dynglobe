@@ -170,45 +170,46 @@ function resize() {
 	renderer.setSize(width, height);
 }
 
-function renderPlayers() {
+async function renderPlayers() {
 	let players = [], placedPlayers = [], placedLabels = [];
-	fetch('https://corsproxy.io/?' + encodeURIComponent(`https://emctoolkit.vercel.app/api/aurora/onlineplayers`))
-		.then(res => res.json())
-		.then(json => {
-			playersObj.splice(0, playersObj.length);
-			playerLabelsObj.splice(0, playerLabelsObj.length);
-			json.forEach(player => { if (!player.underground) players.push({ name: player.name, x: player.x, z: player.z }); });
-			
-			// Add players and labels to world.
-			players.forEach(player => {
-				const location = cartesianToSpherical(player.x, player.z, radius),
-					playerMesh = new THREE.Mesh(playerGeometry, playerMaterial),
-					label = new SpriteText(player.name, 0.33),
-					labelLocation = cartesianToSpherical(player.x, player.z, radius + 0.8);
 
-				if (!document.getElementById('players').checked) playerMesh.visible = false;
-				if (!document.getElementById('players').checked) label.visible = false;
-				label.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+	const data = await fetchJSON('https://api.codetabs.com/v1/proxy/?quest=https://map.earthmc.net/tiles/players.json')
+	if (!data) {
+		return alert('Unexpected error occurred while loading players, maybe EarthMC is down? Try again later.')
+	}
 
-				placedPlayers.push(playerMesh);
-				placedLabels.push(label);
-				playerLabelsObj.push(label);
-				playersObj.push(playerMesh);
+	playersObj.splice(0, playersObj.length);
+	playerLabelsObj.splice(0, playerLabelsObj.length);
+	data.players.forEach(player => { players.push({ name: player['display_name'], x: player.x, z: player.z }); });
+	
+	// Add players and labels to world.
+	players.forEach(player => {
+		const location = cartesianToSpherical(player.x, player.z, radius),
+			playerMesh = new THREE.Mesh(playerGeometry, playerMaterial),
+			label = new SpriteText(player.name, 0.33),
+			labelLocation = cartesianToSpherical(player.x, player.z, radius + 0.8);
 
-				playerMesh.position.set(...location);
-				label.position.set(...labelLocation);
-				scene.add(label);
-				scene.add(playerMesh);
-			});
+		if (!document.getElementById('players').checked) playerMesh.visible = false;
+		if (!document.getElementById('players').checked) label.visible = false;
+		label.backgroundColor = 'rgba(0, 0, 0, 0.5)';
 
-			// Delete old positions and call the function again.
-			setTimeout(() => {
-				placedPlayers.forEach(player => scene.remove(player));
-				placedLabels.forEach(label => scene.remove(label));
-				renderPlayers();
-			}, 30000);
+		placedPlayers.push(playerMesh);
+		placedLabels.push(label);
+		playerLabelsObj.push(label);
+		playersObj.push(playerMesh);
 
-		}).catch((error) => console.error(`Couldn't load players, error: ${error}`));
+		playerMesh.position.set(...location);
+		label.position.set(...labelLocation);
+		scene.add(label);
+		scene.add(playerMesh);
+	});
+
+	// Delete old positions and call the function again.
+	setTimeout(() => {
+		placedPlayers.forEach(player => scene.remove(player));
+		placedLabels.forEach(label => scene.remove(label));
+		renderPlayers();
+	}, 3000);
 }
 
 function roundTo16(number) {
@@ -218,9 +219,9 @@ function roundTo16(number) {
 async function renderTowns() {
 
 	const data = await fetchJSON('https://api.codetabs.com/v1/proxy/?quest=https://map.earthmc.net/tiles/minecraft_overworld/markers.json')
+	if (!data) return alert('Could not get data from EarthMC servers, maybe EarthMC is down? Try again later.')
 	if (data[0].markers.length == 0) {
-		alert('Unexpected error occurred while loading the globe, maybe EarthMC is down? Try again later.')
-		return
+		return alert('Unexpected error occurred while loading the globe, maybe EarthMC is down? Try again later.')
 	}
 
 	// Push needed data to towns array.
