@@ -236,7 +236,7 @@ async function renderTowns() {
 
 			const town = marker.tooltip.match(/<b>(.*)<\/b>/)[1]
 			const nation = marker.tooltip.match(/\(\b(?:Member|Capital)\b of (.*)\)\n/)?.at(1)
-			regionData.push({ name: town, fill: marker.fillColor, outline: marker.color, nation: nation, vertices: vertices });
+			regionData.push({ name: town, fill: marker.fillColor, outline: marker.color ?? marker.fillColor, nation: nation, vertices: vertices });
 
 		}
 	}
