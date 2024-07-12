@@ -39,7 +39,7 @@ const radius = 100,
 	
 let scene, renderer, camera, controls, skybox;
 let surfaceFlight = true,
-	angleMod = 0.04;
+	viewAngle = 0.07;
 
 // Convert cartesian coords x, z to spherical coords with radius r.
 function cartesianToSpherical(x, z, r) {
@@ -56,9 +56,9 @@ function cartesianToSpherical(x, z, r) {
 // Buttons/togglers listeners and methods.
 document.getElementById('players').addEventListener('change', function() { toggleInput('players') });
 document.getElementById('towns').addEventListener('change', function() { toggleInput('towns') });
-document.getElementById('labels').addEventListener('change', function() { toggleInput('labels') });
-document.getElementById('flysurf').addEventListener('change', function() { toggleInput('surfaceflight') });
-document.getElementById('anglemod').addEventListener('input', function() { toggleInput('anglemod', this.value) });
+document.getElementById('town-labels').addEventListener('change', function() { toggleInput('town-labels') });
+document.getElementById('surface-flight').addEventListener('change', function() { toggleInput('surface-flight') });
+document.getElementById('view-angle').addEventListener('input', function() { toggleInput('view-angle', this.value) });
 
 function toggleInput(param, value = null) {
 	switch (param) {
@@ -72,11 +72,11 @@ function toggleInput(param, value = null) {
 		case 'labels':
 			townLabelsObj.forEach(label => { label.visible = !label.visible; });
 			break;
-		case 'surfaceflight':
+		case 'surface-flight':
 			surfaceFlight = !surfaceFlight;
 			break;
-		case 'anglemod':
-			angleMod = value;
+		case 'view-angle':
+			viewAngle = value;
 	}
 }
 
@@ -137,7 +137,7 @@ function update() {
 	// Surface flight feature.
 	if (surfaceFlight) {
 		let angle = Math.PI / 2;
-		const effect = Math.exp(angleMod * (radius - camera.position.length()));
+		const effect = Math.exp(viewAngle * (radius - camera.position.length()));
 		angle *= effect;
 		camera.rotateOnAxis( axis, angle );
 	}
@@ -155,7 +155,7 @@ function update() {
 		townLabelsObj.forEach(label => { label.visible = false; });
 	} else {
 		playerLabelsObj.forEach(player => { player.visible = document.getElementById('players').checked; });
-		townLabelsObj.forEach(player => { player.visible = document.getElementById('labels').checked; });
+		townLabelsObj.forEach(player => { player.visible = document.getElementById('town-labels').checked; });
 	}
 
 	renderer.render( scene, camera );
