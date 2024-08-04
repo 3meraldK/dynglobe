@@ -1,32 +1,76 @@
+<!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width,initial-scale=1">
-		<title>Dynglobe</title>
-		<link rel="icon" type="image/x-icon" href="images/favicon.ico">
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro&display=swap" rel="stylesheet">
-		<style>
-			div { display: inline-block; max-height: 22px; }
-			body { margin: 0; padding: 0; background-color: black; cursor: grab; color: white; font-family: 'Source Sans Pro', sans-serif; user-select: none;}
-			a { text-decoration: none; color: cornflowerblue; }
-		</style>
-	</head>
-	<body>
-		<script src="main.js" type="module"></script>
-		<script src="libs/three.js"></script>
-		<script src="libs/controls.js"></script>
-		<script src="libs/conic-polygon.js"></script>
-		<script src="libs/sprite-text.js"></script>
-		<div>
-			<input type="checkbox" id="players" name="players" checked><label for="players">Players</label>
-			<input type="checkbox" id="towns" name="towns" checked><label for="towns">Towns</label>
-			<input type="checkbox" id="town-labels" name="town-labels" checked><label for="town-labels">Town labels | </label>
-			<input type="checkbox" id="surface-flight" name="surface-flight" checked><label for="surface-flight">Surface flight |</label>
-			<label>View angle</label><input type="range" id="view-angle" min="0.02" max="0.12" value="0.07" step="any">
-			<label> | 1:4 map scan @ 11/07/2024 | Loading takes time! | by 3meraldK @ </label>
-			<a href="https://github.com/3meraldK/3meraldk.github.io">Source code</a>
-		</div>
-	</body>
+<head>
+
+    <title>EarthMC Dynglobe</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro&display=swap" rel="stylesheet">
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.167.0/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.167.0/examples/jsm/",
+                "three/addons/sprite-text": "https://unpkg.com/three-spritetext@1.8.2/dist/three-spritetext.mjs"
+            }
+        }
+    </script>
+    <script type="module"> import * as THREE from 'three'; window.THREE = { ...THREE }; </script>
+    <script src="//unpkg.com/three-conic-polygon-geometry" defer></script>
+
+</head>
+<body>
+
+    <!-- menu ... -->
+    <button id="menu-button" style="display: none">
+        <div class="menu-kebab" style="top: 12px"></div>
+        <div class="menu-kebab" style="top: 20px"></div>
+        <div class="menu-kebab" style="top: 28px"></div>
+    </button>
+
+    <div id="menu" style="display: none">
+        <div class="menu-element" style="font-size: larger; text-align: center; padding: 5px 5px 0 5px">
+            EarthMC Dynglobe 2.0 by 3meraldK
+        </div>
+        <div class="menu-element" style="font-size: smaller; color: #555; text-align: center; padding: 0">
+            Toggle menu button via G key
+        </div>
+
+        <hr>
+        <div class="menu-element" style="padding: 0 0 0 5px">
+            <input type="checkbox" id="surface-flight" name="surface-flight" checked>
+            <label for="surface-flight">Surface flight</label>
+        </div>
+        <div class="menu-element" style="padding: 5px 0 0 10px">
+            <label>View angle</label>
+            <input type="range" id="surface-flight-view-angle" min="0.02" max="0.12" value="0.07" step="any" style="width: 100px">
+        </div>
+
+        <hr>
+        <div class="menu-element" style="padding: 0 0 0 5px">
+            <input type="checkbox" id="players" name="players" checked>
+            <label for="players">Players</label>
+        </div>
+        <div class="menu-element">
+            <input type="checkbox" id="towns" name="towns" checked>
+            <label for="towns">Towns</label>
+        </div>
+        <div class="menu-element" style="padding-bottom: 5px">
+            <input type="checkbox" id="town-labels" name="town-labels" checked>
+            <label for="town-labels">Town labels</label>
+        </div>
+    </div>
+    <!-- ... menu -->
+
+    <div id="loading-prompt">
+        <div id="title">
+        <div id="subtitle">
+    </div>
+
+    <script src="main.js" type="module"></script>
+
+</body>
 </html>
