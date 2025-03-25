@@ -46,7 +46,7 @@
         </div>
         <div class="menu-element" style="padding: 5px 0 0 10px">
             <label>View angle</label>
-            <input type="range" id="surface-flight-view-angle" min="0.02" max="0.12" value="0.07" step="any" style="width: 100px">
+            <input type="range" id="surface-flight-view-angle" min="0.01" max="0.12" value="0.07" step="any" style="width: 100px">
         </div>
 
         <hr>
@@ -64,6 +64,11 @@
         </div>
     </div>
     <!-- ... menu -->
+
+    <div id="notification" style="display: none">
+        <p id="notification-message"></p><br>
+        <button id="notification-button">OK</button>
+    </div>
 
     <div id="loading-prompt">
         <div id="title">

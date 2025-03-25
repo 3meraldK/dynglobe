@@ -9,8 +9,8 @@ const proxyURL = 'https://api.codetabs.com/v1/proxy/?quest='
 const mapURL = 'https://map.earthmc.net/tiles'
 
 // Hideable scene elements
-let players
-let playerLabels
+let players = []
+let playerLabels = []
 const towns = []
 const townLabels = []
 
@@ -59,7 +59,7 @@ function loadTile({ imgSrc, tileX, tileZ }) {
 			renderTowns()
 		}
 	}
-	// Retry to download tile. Throws many errors in console, but it's probably faster
+	// Retry to download tile without a delay. Throws many errors in console, but it's probably faster
 	img.onerror = () => loadTile({ imgSrc, tileX, tileZ })
 }
 
@@ -104,7 +104,7 @@ function initSkybox() {
 	})
 	skybox = new THREE.Mesh(geometry, faces)
 	scene.add(skybox)
-	renderPlayers()
+	setInterval(renderPlayers, 3000)
 }
 
 function initMenu() {
@@ -226,13 +226,12 @@ function resize() {
 	renderer.setSize(width, height)
 }
 
-// Recursive function (each 3 seconds)
 async function renderPlayers() {
-	const data = await fetchJSON(proxyURL + mapURL + '/players.json')
-	if (!data) return
+	for (const player of players) { scene.remove(player) }
+	for (const label of playerLabels) { scene.remove(label) }
 
-	players = []
-	playerLabels = []
+	const data = await fetchJSON(proxyURL + mapURL + '/players.json')
+	if (!data) return console.log('[Dynglobe] Could not get player list')
 
 	const geometry = new THREE.SphereGeometry(0.2, 16, 8)
 	const material = new THREE.MeshBasicMaterial({ color: 0x000000 })
@@ -258,19 +257,13 @@ async function renderPlayers() {
 		players.push(mesh)
 		playerLabels.push(label)
 	}
-
-	// Remove old positions and call same function
-	setTimeout(() => {
-		for (const player of players) { scene.remove(player) }
-		for (const label of playerLabels) { scene.remove(label) }
-		renderPlayers()
-	}, 3000)
 }
 
 async function renderTowns() {
 	const startTownRender = new Date()
 	const data = await fetchJSON(proxyURL + mapURL + '/minecraft_overworld/markers.json')
 	if (!data || data[0].markers.length == 0) {
+		sendNotification('There was a problem with getting towns data')
 		console.log('[Dynglobe] There was a problem with getting towns data')
 		return initialize()
 	}
@@ -401,8 +394,7 @@ async function renderTowns() {
 
 /* Utility functions ... */
 
-// EarthMC map is not symmetrical and misses certain longitudes, we need these constants
-// Adjusters
+// EarthMC map is not symmetrical and misses certain longitudes, we need these constants and adjusters
 const xConst = 0.54249580568
 const zConst = 0.358392393
 const xDivisor = 184.333333 // times 180 equals avg of -33280 and 33080
@@ -453,4 +445,16 @@ async function fetchJSON(url) {
 	const response = await fetch(url)
 	if (response.ok) return response.json()
 	else return null
+}
+
+const notification = document.getElementById('notification')
+const notifMessage = document.getElementById('notification-message')
+document.getElementById('notification-button').onclick = () => {
+	notifMessage.textContent = ''
+	notification.style.display = 'none'
+}
+
+function sendNotification(message) {
+	notifMessage.textContent = message
+	notification.style.display = 'inline'
 }
