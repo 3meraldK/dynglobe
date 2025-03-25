@@ -375,7 +375,7 @@ async function renderTowns() {
 	// Draw towns fill
 	for (const {properties, geometry} of geoJson.features) {
 		for (const polygonCoords of [geometry.coordinates]) {
-			const geometry = new window.THREE.ConicPolygonGeometry(polygonCoords, 0, earthRadius * 1.0001)
+			const geometry = new ConicPolygonGeometry(polygonCoords, 0, earthRadius * 1.0001)
 			const material = [
 				null, // sides
 				null, // bottom
