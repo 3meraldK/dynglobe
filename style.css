@@ -2,6 +2,7 @@ body {
     margin: 0;
     font-family: 'Source Sans Pro', sans-serif;
     user-select: none;
+    overflow: hidden;
 }
 
 hr {
