@@ -66,8 +66,8 @@ function loadTile({ imgSrc, tileX, tileZ }) {
 function removeLoadingPrompt() {
 	const prompt = document.getElementById('loading-prompt')
 	prompt.style.opacity = 1
-	for (let i = 0; i < 100; i += 1) {
-		setTimeout(() => prompt.style.opacity -= 0.01, 10 * i)
+	for (let i = 0; i < 200; i += 1) {
+		setTimeout(() => prompt.style.opacity -= 0.005, 5 * i)
 	}
 	setTimeout(() => prompt.remove(), 1001)
 }

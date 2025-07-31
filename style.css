@@ -8,8 +8,6 @@ hr {
     width: 75%;
 }
 
-/* Loading prompt */
-
 #loading-prompt {
     display: flex;
     position: absolute;
@@ -23,18 +21,19 @@ hr {
     font-family: monospace;
     text-align: center;
     pointer-events: none;
+    flex-direction: column;
 }
 
 #title {
-    clip-path: inset(0 3.3ch 0 0);
-    animation: l4 1s steps(4) infinite;
-    width: 600px;
-    height: 100px;
     font-size: 48px;
+    clip-path: inset(0 3ch 0 0);
+    animation: title 1s steps(4, jump-none) infinite;
+    position: relative;
+    left: 1ch;
 }
 
-#title:before {
-    content: "Downloading tiles...";
+@keyframes title {
+    to { clip-path: inset(0) }
 }
 
 #subtitle {
@@ -42,12 +41,6 @@ hr {
     font-weight: normal;
     margin-top: 10px;
 }
-
-@keyframes l4 {
-    to { clip-path: inset(0 -1.1ch 0 0); }
-}
-
-/* Menu */
 
 #menu-button {
     width: 50px;
