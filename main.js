@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import SpriteText from 'three/addons/sprite-text'
 
 // Three.js global elements
-let scene, camera, controls, renderer, skybox
+let scene, camera, controls, renderer, skybox, earth
 const earthRadius = 100
 const proxyURL = 'https://api.codetabs.com/v1/proxy/?quest='
 const mapURL = 'https://map.earthmc.net/tiles'
@@ -84,7 +84,7 @@ function initControls() {
 }
 
 function initThree() {
-	renderer = new THREE.WebGLRenderer({ antialias: true })
+	renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true })
 	// Disable unwanted three.js 0.152.0 changes
 	THREE.ColorManagement.enabled = false
 	renderer.outputColorSpace = THREE.LinearSRGBColorSpace
@@ -144,10 +144,14 @@ function initAtmosphere() {
 		vertexShader: vertexShader,
 		fragmentShader: fragmentShader,
 		blending: THREE.AdditiveBlending,
-		side: THREE.BackSide
+		side: THREE.BackSide,
+		depthWrite: false,
+		depthTest: false
 	})
 	const atmosphere = new THREE.Mesh(geometry, material)
 	scene.add(atmosphere)
+	atmosphere.renderOrder = 0
+	earth.renderOrder = 1
 }
 
 function initEarth() {
@@ -165,10 +169,10 @@ function initEarth() {
 
 	const material = new THREE.MeshBasicMaterial({ map: texture })
 	const geometry = new THREE.SphereGeometry(earthRadius, 64, 32)
-	const sphere = new THREE.Mesh(geometry, material)
+	earth = new THREE.Mesh(geometry, material)
 
-	scene.add(sphere)
-	sphere.rotation.y = -1.57
+	scene.add(earth)
+	earth.rotation.y = -1.57
 	initAtmosphere()
 }
 
