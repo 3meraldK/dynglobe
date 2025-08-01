@@ -333,8 +333,8 @@ async function renderTowns() {
 		let index = 0
 		for (const vertex of region.vertices) {
 			const location = cartesianToSpherical(vertex.x, vertex.z, earthRadius * 1.0001)
-			const longitude = vertex.x / xDivisor + xConst
-			const latitude = -(vertex.z / zDivisor + zConst) // Invert Z-axis because Minecraft
+			const longitude = vertex.x / lngLength + xShift
+			const latitude = -(vertex.z / latLength + zShift) // Invert Z-axis because Minecraft
 			const vertexLocation = new THREE.Vector3(...location)
 			geoJsonCoords.push([longitude, latitude])
 
@@ -416,20 +416,23 @@ async function renderTowns() {
 
 /* Utility functions ... */
 
-// EarthMC map is not symmetrical and misses certain longitudes, we need these constants and adjusters
-const xConst = 0.54249580568
-const zConst = 0.358392393
-const xDivisor = 184.333333 // times 180 equals avg of -33280 and 33080
-const zDivisor = 184.155555 // times 90  equals avg of -16640 and 16508
+// Map corners are (-33280, -16640) and (33080, 16508)
+// Map is 33280+33080 = 66360 blocks long and 16640+16508 = 33148 blocks wide
+const lngLength = 66360 / 360
+const latLength = 33148 / 180
+// Map's center is at (-33280+33080)/2 = -100, (-16640+16508)/2 = -66
+const xShift = Math.abs(-100 / lngLength)
+const zShift = Math.abs(-66 / latLength)
+
 function cartesianToSpherical(x, z, radius) {
-	const longitude = x / xDivisor + xConst
-    const latitude = (z / zDivisor + zConst) * -1 // Invert Z-axis because Minecraft
-	const theta = longitude * (Math.PI / 180)
-	const phi = latitude * (Math.PI / 180)
-	const ox = radius * Math.sin(theta) * Math.cos(phi)
-	const oy = radius * Math.sin(phi)
-	const oz = radius * Math.cos(theta) * Math.cos(phi)
-	return [ox, oy, oz]
+    const longitude = x / lngLength + xShift
+    const latitude = (z / latLength + zShift) * -1 // Invert Z-axis because Minecraft
+    const theta = longitude * (Math.PI / 180)
+    const phi = latitude * (Math.PI / 180)
+    const ox = radius * Math.sin(theta) * Math.cos(phi)
+    const oy = radius * Math.sin(phi)
+    const oz = radius * Math.cos(theta) * Math.cos(phi)
+    return [ox, oy, oz]
 }
 
 function roundTo16(number) {
