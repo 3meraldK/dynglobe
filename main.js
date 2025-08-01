@@ -17,41 +17,30 @@ const playerLabels = []
 const towns = []
 const townLabels = []
 
-// For downloading and merging tiles
-const tileXCount = 16 + 2
-const tileZCount = 8 + 2
-const tileSize = 512 // pixels
-const drawingCanvas = document.createElement('canvas')
-const drawingContext = drawingCanvas.getContext('2d')
-drawingCanvas.width = tileXCount * 512
-drawingCanvas.height = tileZCount * 512
-
-downloadTiles()
-
-let loadedTiles = 0
-
-const startDownload = new Date()
 function downloadTiles() {
-	initRenderer()
-	initSkybox()
-	initControls()
+
+	drawingCanvas.width = tileXCount * tileSize
+	drawingCanvas.height = tileZCount * tileSize
 
 	const tileZoom = 0
-    for (let x = -(tileXCount/2); x < tileXCount/2; x++) {
-        for (let z = -(tileZCount/2); z < tileZCount/2; z++) {
-            // We need to start placing tiles on canvas at 0, 0
+	for (let x = -(tileXCount/2); x < tileXCount/2; x++) {
+		for (let z = -(tileZCount/2); z < tileZCount/2; z++) {
+			// We need to start placing tiles on canvas at 0, 0
 			const tileX = x + tileXCount/2
-            const tileZ = z + tileZCount/2
+			const tileZ = z + tileZCount/2
+
 			const imgSrc = proxyURL + mapURL + `/minecraft_overworld/${tileZoom}/${x}_${z}.png`
 			loadTile(imgSrc, tileX, tileZ)
 		}
 	}
 }
 
+let loadedTiles = 0
 function loadTile(imgSrc, tileX, tileZ) {
 	const img = new Image()
 	img.crossOrigin = 'Anonymous'
 	img.src = imgSrc
+	const drawingContext = drawingCanvas.getContext('2d')
 	img.onload = () => {
 		drawingContext.drawImage(img, tileX * tileSize, tileZ * tileSize, tileSize, tileSize)
 		loadedTiles++
@@ -61,8 +50,8 @@ function loadTile(imgSrc, tileX, tileZ) {
 			const stopDownload = new Date()
 			const diff = getTimeDiff(startDownload, stopDownload)
 			console.log(`[Dynglobe] Downloading tiles took ${diff}s`)
-			initEarth()
-			renderTowns()
+
+			initStep1()
 		}
 	}
 	// Retry to download tile without a delay. Throws many errors in console, but it's probably faster
@@ -86,7 +75,6 @@ function initControls() {
 	controls.dampingFactor = 0.2
 	controls.enablePan = false
 	camera.position.z = earthRadius * 8
-	tick()
 }
 
 function initRenderer() {
@@ -117,7 +105,6 @@ function initSkybox() {
 	})
 	skybox = new THREE.Mesh(geometry, faces)
 	scene.add(skybox)
-	setInterval(renderPlayers, 3000)
 }
 
 function initMenu() {
@@ -140,20 +127,20 @@ function initMenu() {
 
 function initAtmosphere() {
 	const vertexShader =
-    `varying vec3 vertexNormal;
-    void main() {
-        vertexNormal = normalize(normalMatrix * normal);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }`
-    const fragmentShader =
-    `varying vec3 vertexNormal;
-    void main() {
-        float fadeOutFactor = 0.33;
-        vec3 forward = vec3(0, 0, 1.0);
-        vec4 blueColor = vec4(0.3, 0.6, 1.0, 1.0);
-        float intensity = fadeOutFactor - dot(vertexNormal, forward);
-        gl_FragColor = blueColor * intensity;
-    }`
+	`varying vec3 vertexNormal;
+	void main() {
+		vertexNormal = normalize(normalMatrix * normal);
+		gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+	}`
+	const fragmentShader =
+	`varying vec3 vertexNormal;
+	void main() {
+		float fadeOutFactor = 0.33;
+		vec3 forward = vec3(0, 0, 1.0);
+		vec4 blueColor = vec4(0.3, 0.6, 1.0, 1.0);
+		float intensity = fadeOutFactor - dot(vertexNormal, forward);
+		gl_FragColor = blueColor * intensity;
+	}`
 
 	const geometry = new THREE.SphereGeometry(earthRadius * 1.1, meridians, parallels)
 	const material = new THREE.ShaderMaterial({
@@ -175,7 +162,7 @@ function initEarth() {
 	const crop = { left: 448, right: 472, top: 480, bottom: 496 }
 
 	const mapWidth = tileXCount * tileSize - crop.left - crop.right
-    const mapHeight = tileZCount * tileSize - crop.top - crop.bottom
+	const mapHeight = tileZCount * tileSize - crop.top - crop.bottom
 	const mapTexture = document.createElement('canvas')
 	const mapContext = mapTexture.getContext('2d')
 	mapTexture.width = mapWidth
@@ -191,7 +178,6 @@ function initEarth() {
 
 	scene.add(earth)
 	earth.rotation.y = -Math.PI / 2 // Set the camera above the prime meridian
-	initAtmosphere()
 }
 
 function tick() {
@@ -204,11 +190,11 @@ function tick() {
 	if (isEnabled('surface-flight')) surfaceFlight()
 	const isTooFar = (zoom > 150)
 	if (townLabels) for (const label of townLabels) {
-        label.visible = isEnabled('town-labels') && isEnabled('towns') && !isTooFar
-    }
-    if (playerLabels) for (const playerLabel of playerLabels) {
-        playerLabel.visible = isEnabled('players') && !isTooFar
-    }
+		label.visible = isEnabled('town-labels') && isEnabled('towns') && !isTooFar
+	}
+	if (playerLabels) for (const playerLabel of playerLabels) {
+		playerLabel.visible = isEnabled('players') && !isTooFar
+	}
 
 	renderer.render(scene, camera)
 	requestAnimationFrame(tick)
@@ -230,18 +216,10 @@ function setVisibility(checkbox, boolean) {
 
 function surfaceFlight() {
 	const viewAngle = document.getElementById('surface-flight-view-angle').value
-	let angle = Math.PI / 2
-	const effect = Math.exp(viewAngle * (earthRadius - camera.position.length()))
-	angle *= effect
+	const effect = Math.exp(viewAngle * (earthRadius - controls.getDistance()))
+	const angle = Math.PI / 2 * effect
 	const pitchAxis = new THREE.Vector3( 1, 0, 0 )
 	camera.rotateOnAxis( pitchAxis, angle )
-}
-
-function initialize() {
-	removeLoadingPrompt()
-	initMenu()
-	const totalTime = getTimeDiff(startDownload, new Date())
-	console.log(`[Dynglobe] Total processing time was ${totalTime}s`)
 }
 
 function resize() {
@@ -259,7 +237,7 @@ async function renderPlayers() {
 	const data = await fetchJSON(proxyURL + mapURL + '/players.json')
 	if (!data) return console.log('[Dynglobe] Could not get player list')
 
-	const geometry = new THREE.SphereGeometry(0.2, 16, 8) // size, width/height segments
+	const geometry = new THREE.SphereGeometry(0.2, 8, 4) // size, width/height segments
 	const material = new THREE.MeshBasicMaterial({ color: 0x000000 })
 
 	const labelTextHeight = 0.33
@@ -290,7 +268,7 @@ async function renderTowns() {
 	const data = await fetchJSON(proxyURL + mapURL + '/minecraft_overworld/markers.json')
 	if (!data || data[0].markers.length == 0) {
 		sendNotification('There was a problem with fetching data from EarthMC')
-		return initialize()
+		return initStep2()
 	}
 
 	const regions = []
@@ -327,9 +305,9 @@ async function renderTowns() {
 	const geoJson = { type: "FeatureCollection", features: [] }
 	for (const region of regions) {
 		const vertices = []
-        const geoJsonCoords = []
-        const verticesCoords = {x: new Set(), z: new Set()}
-        let startVertexLoc
+		const geoJsonCoords = []
+		const verticesCoords = {x: new Set(), z: new Set()}
+		let startVertexLoc
 		let index = 0
 		for (const vertex of region.vertices) {
 			const location = cartesianToSpherical(vertex.x, vertex.z, earthRadius * 1.0001)
@@ -339,10 +317,10 @@ async function renderTowns() {
 			geoJsonCoords.push([longitude, latitude])
 
 			vertices.push(vertexLocation)
-            if (index == 0) startVertexLoc = vertexLocation
+			if (index == 0) startVertexLoc = vertexLocation
 
-            verticesCoords.x.add(vertex.x)
-            verticesCoords.z.add(vertex.z)
+			verticesCoords.x.add(vertex.x)
+			verticesCoords.z.add(vertex.z)
 			index++
 		}
 
@@ -373,7 +351,7 @@ async function renderTowns() {
 		if (region.town) {
 			const townCenter = {
 				x: (Math.min(...verticesCoords.x) + Math.max(...verticesCoords.x)) / 2,
-                z: (Math.min(...verticesCoords.z) + Math.max(...verticesCoords.z)) / 2
+				z: (Math.min(...verticesCoords.z) + Math.max(...verticesCoords.z)) / 2
 			}
 			const labelLocation = cartesianToSpherical(townCenter.x, townCenter.z, earthRadius + 0.33)
 			const text = (region.nation == null) ? region.town : region.town + '\n' + region.nation
@@ -411,7 +389,7 @@ async function renderTowns() {
 	const diff = getTimeDiff(startTownRender, stopTownRender)
 	console.log(`[Dynglobe] Rendering towns took ${diff}s`)
 
-	initialize()
+	initStep2()
 }
 
 /* Utility functions ... */
@@ -425,14 +403,14 @@ const xShift = Math.abs(-100 / lngLength)
 const zShift = Math.abs(-66 / latLength)
 
 function cartesianToSpherical(x, z, radius) {
-    const longitude = x / lngLength + xShift
-    const latitude = (z / latLength + zShift) * -1 // Invert Z-axis because Minecraft
-    const theta = longitude * (Math.PI / 180)
-    const phi = latitude * (Math.PI / 180)
-    const ox = radius * Math.sin(theta) * Math.cos(phi)
-    const oy = radius * Math.sin(phi)
-    const oz = radius * Math.cos(theta) * Math.cos(phi)
-    return [ox, oy, oz]
+	const longitude = x / lngLength + xShift
+	const latitude = (z / latLength + zShift) * -1 // Invert Z-axis because Minecraft
+	const theta = longitude * (Math.PI / 180)
+	const phi = latitude * (Math.PI / 180)
+	const ox = radius * Math.sin(theta) * Math.cos(phi)
+	const oy = radius * Math.sin(phi)
+	const oz = radius * Math.cos(theta) * Math.cos(phi)
+	return [ox, oy, oz]
 }
 
 function roundTo16(number) {
@@ -441,17 +419,17 @@ function roundTo16(number) {
 
 // Shoelace formula
 function getArea(vertices) {
-    const n = vertices.length
-    let area = 0
+	const n = vertices.length
+	let area = 0
 
 	// Vertices need rounding to 16 because data has imprecise coordinates
-    for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n
-        area += roundTo16(vertices[i].x) * roundTo16(vertices[j].z)
-        area -= roundTo16(vertices[j].x) * roundTo16(vertices[i].z)
-    }
+	for (let i = 0; i < n; i++) {
+		const j = (i + 1) % n
+		area += roundTo16(vertices[i].x) * roundTo16(vertices[j].z)
+		area -= roundTo16(vertices[j].x) * roundTo16(vertices[i].z)
+	}
 
-    return (Math.abs(area) / 2) / (16 * 16)
+	return (Math.abs(area) / 2) / (16 * 16)
 }
 
 // Get difference between times in x.xx seconds
@@ -483,5 +461,38 @@ document.getElementById('notification-button').onclick = () => {
 function sendNotification(message) {
 	notifMessage.textContent = message
 	notification.style.display = 'inline'
-    console.log('[Dynglobe]', message)
+	console.log('[Dynglobe]', message)
 }
+
+// Download map tiles in the smallest resolution (zoom level 0) and merge them
+// There are 16 full tiles in X direction and 8 full tiles in Z direction
+// Each map edge has 1 extra non-full tile
+const tileSize = 512 // pixels
+const tileXCount = 16 + 1 + 1
+const tileZCount = 8 + 1 + 1
+const drawingCanvas = document.createElement('canvas')
+
+const startDownload = new Date()
+function init() {
+	initRenderer()
+	downloadTiles()
+}
+
+function initStep1() {
+	initSkybox()
+	initControls()
+	initEarth()
+	setInterval(renderPlayers, 3000)
+	initAtmosphere()
+	renderTowns()
+}
+
+function initStep2() {
+	tick()
+	removeLoadingPrompt()
+	initMenu()
+	const totalTime = getTimeDiff(startDownload, new Date())
+	console.log(`[Dynglobe] Total processing time was ${totalTime}s`)
+}
+
+init()
